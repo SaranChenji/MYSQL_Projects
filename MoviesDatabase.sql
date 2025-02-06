@@ -1,5 +1,5 @@
 -- Create Database
-CREATE DATABASE MoviesDB;
+CREATE DATABASE MoviesDB;  
 USE MoviesDB;
 
 -- Create Tables
@@ -7,7 +7,7 @@ CREATE TABLE Genres (
     genre_id INT PRIMARY KEY AUTO_INCREMENT,
     genre_name VARCHAR(100) NOT NULL
 );
-
+			
 CREATE TABLE Directors (
     director_id INT PRIMARY KEY AUTO_INCREMENT,
     director_name VARCHAR(255) NOT NULL,
@@ -82,4 +82,104 @@ INSERT INTO Actors (actor_name, birth_year) VALUES
 ('Suriya', 1975);
 
 INSERT INTO Movie_Actors (movie_id, actor_id) VALUES
-(1, 2), (2, 2
+(1, 2), (2, 2), (3, 3), (4, 1);
+
+INSERT INTO Reviews (movie_id, reviewer_name, review_text, rating) VALUES
+(1, 'Rahul', 'Epic movie with great visuals!', 8.5),
+(2, 'Priya', 'Unique concept and amazing execution.', 9.0),
+(3, 'Arun', 'A powerful film with a strong message.', 9.2),
+(4, 'Deepa', 'Best action movie in recent times.', 9.5);
+
+-- Select Values From Tables
+SELECT * FROM Genres;
+SELECT * FROM Directors;
+SELECT * FROM Movies;
+SELECT * FROM Actors;
+SELECT * FROM Movie_Actors;
+SELECT * FROM Reviews;
+
+-- Update Queries
+UPDATE Movies SET rating = 8.3 WHERE title = 'Ponniyin Selvan';
+UPDATE Directors SET birth_year = 1958 WHERE director_name = 'Mani Ratnam';
+
+
+-- Select Updated Details
+SELECT rating FROM Movies;
+SELECT birth_year FROM Directors;
+
+-- Joins
+SELECT m.title, d.director_name, m.release_year 
+FROM Movies m 
+JOIN Directors d ON m.director_id = d.director_id;
+
+SELECT m.title, a.actor_name 
+FROM Movies m
+JOIN Movie_Actors ma ON m.movie_id = ma.movie_id 
+JOIN Actors a ON ma.actor_id = a.actor_id;
+
+SELECT r.review_id, m.title AS movie_title, r.reviewer_name, r.review_text, r.rating
+FROM Reviews r
+JOIN Movies m ON r.movie_id = m.movie_id;
+
+-- Aggregate Functions
+SELECT m.title, COUNT(r.review_id) AS total_reviews 
+FROM Movies m
+LEFT JOIN Reviews r ON m.movie_id = r.movie_id
+GROUP BY m.title;
+
+SELECT g.genre_name, AVG(m.rating) AS avg_rating
+FROM Movies m
+JOIN Genres g ON m.genre_id = g.genre_id
+GROUP BY g.genre_name;
+
+SELECT MIN(release_year) AS Oldest_Movie, MAX(release_year) AS Newest_Movie
+FROM Movies;
+
+-- View
+CREATE VIEW HighRatedMovies AS
+SELECT title, rating 
+FROM Movies 
+WHERE rating >= 8.0;
+
+SELECT * FROM HighRatedMovies;
+
+-- Show View Structure
+SHOW CREATE VIEW HighRatedMovies;
+
+-- Subquery
+SELECT title, rating 
+FROM Movies 
+WHERE rating > (SELECT AVG(rating) FROM Movies);
+
+-- Stored Procedure
+DELIMITER //
+CREATE PROCEDURE GetMovieCountByGenre()
+BEGIN
+    SELECT g.genre_name, COUNT(m.movie_id) AS movie_count 
+    FROM Movies m
+    JOIN Genres g ON m.genre_id = g.genre_id
+    GROUP BY g.genre_name;
+END //
+DELIMITER ;
+
+CALL GetMovieCountByGenre();
+
+-- Show Stored Procedures
+SHOW PROCEDURE STATUS WHERE Db = 'MoviesDB';
+
+-- Trigger: Auto-update Movie Rating after inserting a Review
+DELIMITER //
+CREATE TRIGGER UpdateMovieRating
+AFTER INSERT ON Reviews
+FOR EACH ROW
+BEGIN
+    UPDATE Movies
+    SET rating = (SELECT AVG(r.rating) FROM Reviews r WHERE r.movie_id = NEW.movie_id)
+    WHERE movie_id = NEW.movie_id;
+END;
+//
+DELIMITER ;
+
+SHOW TRIGGERS;
+
+--END
